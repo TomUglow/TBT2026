@@ -8,98 +8,91 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String?
-  password      String
-  avatar        String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  picks         Pick[]
-  competitions  CompetitionUser[]
-  ownedComps    Competition[]     @relation("CompetitionOwner")
+  id           String            @id @default(cuid())
+  email        String            @unique
+  name         String?
+  password     String
+  avatar       String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  ownedComps   Competition[]     @relation("CompetitionOwner")
+  competitions CompetitionUser[]
+  picks        Pick[]
 }
 
 model Competition {
-  id            String    @id @default(cuid())
-  name          String
-  description   String?
-  entryFee      Float     @default(0)
-  prizePool     Float     @default(0)
-  startDate     DateTime
-  endDate       DateTime
-  isPublic      Boolean   @default(true)
-  maxEvents     Int       @default(50)
-  status        String    @default("upcoming") // upcoming, active, completed
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  ownerId       String
-  owner         User      @relation("CompetitionOwner", fields: [ownerId], references: [id])
-  
-  events        CompetitionEvent[]
-  users         CompetitionUser[]
+  id          String             @id @default(cuid())
+  name        String
+  description String?
+  entryFee    Float              @default(0)
+  prizePool   Float              @default(0)
+  startDate   DateTime
+  endDate     DateTime
+  isPublic    Boolean            @default(true)
+  maxEvents   Int                @default(50)
+  status      String             @default("upcoming")
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  ownerId     String
+  owner       User               @relation("CompetitionOwner", fields: [ownerId], references: [id])
+  events      CompetitionEvent[]
+  users       CompetitionUser[]
 }
 
 model CompetitionUser {
-  id              String    @id @default(cuid())
-  userId          String
-  competitionId   String
-  score           Int       @default(0)
-  rank            Int?
-  joinedAt        DateTime  @default(now())
-  
-  user            User         @relation(fields: [userId], references: [id])
-  competition     Competition  @relation(fields: [competitionId], references: [id], onDelete: Cascade)
-  
+  id            String      @id @default(cuid())
+  userId        String
+  competitionId String
+  score         Int         @default(0)
+  rank          Int?
+  joinedAt      DateTime    @default(now())
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id])
+
   @@unique([userId, competitionId])
 }
 
 model Event {
-  id            String    @id @default(cuid())
-  sport         String    // NFL, NBA, NHL, MLB, UFC, Tennis, etc.
-  team1Name     String
-  team1Abbr     String
-  team1Odds     String?
-  team2Name     String
-  team2Abbr     String
-  team2Odds     String?
-  eventDate     DateTime
-  status        String    @default("upcoming") // upcoming, live, completed
-  winner        String?   // team1, team2, draw
-  score         String?   // Final score if completed
-  externalId    String?   @unique // ID from sports API
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  picks         Pick[]
-  competitions  CompetitionEvent[]
+  id           String             @id @default(cuid())
+  sport        String
+  team1Name    String
+  team1Abbr    String
+  team1Odds    String?
+  team2Name    String
+  team2Abbr    String
+  team2Odds    String?
+  eventDate    DateTime
+  status       String             @default("upcoming")
+  winner       String?
+  score        String?
+  externalId   String?            @unique
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  competitions CompetitionEvent[]
+  picks        Pick[]
 }
 
 model CompetitionEvent {
-  id              String    @id @default(cuid())
-  competitionId   String
-  eventId         String
-  
-  competition     Competition  @relation(fields: [competitionId], references: [id], onDelete: Cascade)
-  event           Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  
+  id            String      @id @default(cuid())
+  competitionId String
+  eventId       String
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  event         Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
   @@unique([competitionId, eventId])
 }
 
 model Pick {
-  id            String    @id @default(cuid())
-  userId        String
-  eventId       String
-  selectedTeam  String    // team1 or team2
-  isCorrect     Boolean?
-  points        Int       @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  user          User      @relation(fields: [userId], references: [id])
-  event         Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  
+  id           String   @id @default(cuid())
+  userId       String
+  eventId      String
+  selectedTeam String
+  isCorrect    Boolean?
+  points       Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id])
+
   @@unique([userId, eventId])
 }
