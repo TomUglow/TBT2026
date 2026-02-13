@@ -17,7 +17,12 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  const session = await getServerSession(authOptions)
+  let session = null
+  try {
+    session = await getServerSession(authOptions)
+  } catch {
+    // Session unavailable during static page generation (e.g. /_not-found)
+  }
 
   return (
     <html lang="en">
