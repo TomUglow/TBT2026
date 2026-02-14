@@ -220,62 +220,6 @@ export default function Dashboard() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
 
-        {/* Leaderboard */}
-        <section>
-          <div className="flex items-center gap-2 mb-4">
-            <Users className="w-5 h-5 gold-accent" />
-            <h2 className="text-lg font-bold uppercase tracking-wider">Leaderboard</h2>
-          </div>
-          {leaderboard.length > 0 ? (
-            <div className="glass-card rounded-xl overflow-hidden">
-              <div className="hidden sm:flex items-center gap-4 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border">
-                <div className="w-10 text-center">#</div>
-                <div className="flex-1">Tipster</div>
-                <div className="w-20 text-center">Score</div>
-              </div>
-              {leaderboard.slice(0, 10).map((entry) => {
-                const isCurrentUser = (session?.user as any)?.id === entry.user.id
-                return (
-                  <div
-                    key={entry.user.id}
-                    className={`flex items-center gap-4 px-4 py-3 border-b border-border last:border-b-0 transition-colors ${
-                      isCurrentUser ? 'bg-primary/10' : ''
-                    }`}
-                  >
-                    <div className="w-10 text-center">
-                      {entry.rank <= 3 ? (
-                        <span className={`text-sm font-black ${entry.rank === 1 ? 'gold-accent' : 'text-muted-foreground'}`}>
-                          {entry.rank}
-                        </span>
-                      ) : (
-                        <span className="text-sm font-semibold text-muted-foreground">{entry.rank}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <div className="w-7 h-7 brand-gradient rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
-                        {entry.user.name?.[0]?.toUpperCase() || 'U'}
-                      </div>
-                      <span className={`text-sm truncate ${isCurrentUser ? 'font-bold' : 'font-medium'}`}>
-                        {entry.user.name || entry.user.email}
-                        {isCurrentUser && <span className="text-xs text-muted-foreground ml-1">(you)</span>}
-                      </span>
-                    </div>
-                    <div className="w-20 text-center">
-                      <span className="text-sm font-bold tabular-nums">{entry.score}</span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground glass-card rounded-xl">
-              <Trophy className="w-8 h-8 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">No leaderboard data yet.</p>
-              <p className="text-xs mt-1">Join a competition to see rankings!</p>
-            </div>
-          )}
-        </section>
-
         {/* Live & Upcoming Games */}
         {upcomingGames.length > 0 && (
           <section>
@@ -408,6 +352,62 @@ export default function Dashboard() {
             <div className="text-center py-12 text-muted-foreground glass-card rounded-xl">
               <p className="text-sm">No events found for this filter.</p>
               <p className="text-xs mt-2">Check back later for upcoming events!</p>
+            </div>
+          )}
+        </section>
+
+                {/* Leaderboard */}
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <Users className="w-5 h-5 gold-accent" />
+            <h2 className="text-lg font-bold uppercase tracking-wider">Leaderboard</h2>
+          </div>
+          {leaderboard.length > 0 ? (
+            <div className="glass-card rounded-xl overflow-hidden">
+              <div className="hidden sm:flex items-center gap-4 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border">
+                <div className="w-10 text-center">#</div>
+                <div className="flex-1">Tipster</div>
+                <div className="w-20 text-center">Score</div>
+              </div>
+              {leaderboard.slice(0, 10).map((entry) => {
+                const isCurrentUser = (session?.user as any)?.id === entry.user.id
+                return (
+                  <div
+                    key={entry.user.id}
+                    className={`flex items-center gap-4 px-4 py-3 border-b border-border last:border-b-0 transition-colors ${
+                      isCurrentUser ? 'bg-primary/10' : ''
+                    }`}
+                  >
+                    <div className="w-10 text-center">
+                      {entry.rank <= 3 ? (
+                        <span className={`text-sm font-black ${entry.rank === 1 ? 'gold-accent' : 'text-muted-foreground'}`}>
+                          {entry.rank}
+                        </span>
+                      ) : (
+                        <span className="text-sm font-semibold text-muted-foreground">{entry.rank}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className="w-7 h-7 brand-gradient rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
+                        {entry.user.name?.[0]?.toUpperCase() || 'U'}
+                      </div>
+                      <span className={`text-sm truncate ${isCurrentUser ? 'font-bold' : 'font-medium'}`}>
+                        {entry.user.name || entry.user.email}
+                        {isCurrentUser && <span className="text-xs text-muted-foreground ml-1">(you)</span>}
+                      </span>
+                    </div>
+                    <div className="w-20 text-center">
+                      <span className="text-sm font-bold tabular-nums">{entry.score}</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground glass-card rounded-xl">
+              <Trophy className="w-8 h-8 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">No leaderboard data yet.</p>
+              <p className="text-xs mt-1">Join a competition to see rankings!</p>
             </div>
           )}
         </section>
