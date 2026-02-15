@@ -121,14 +121,13 @@ export default function LobbyPage() {
             Your competitions and ones you can join.
           </p>
         </div>
-        <button
-          disabled
-          className="glass-card px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 opacity-50 cursor-not-allowed w-fit"
-          title="Coming Soon"
+        <Link
+          href="/lobby/create"
+          className="glass-card px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover-elevate hover:border-primary/50 transition-colors w-fit"
         >
           <Plus className="w-4 h-4" />
           Create League
-        </button>
+        </Link>
       </div>
 
       {/* Join Private Code */}

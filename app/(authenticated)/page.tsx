@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { format, differenceInHours, differenceInMinutes, differenceInDays } from 'date-fns'
 import {
   Trophy, Target, TrendingUp, Calendar, CheckCircle2,
@@ -239,14 +240,13 @@ export default function Dashboard() {
               </h1>
               <p className="text-white/70 text-lg">Here&apos;s what&apos;s happening.</p>
             </div>
-            <button
-              disabled
-              className="glass-card px-5 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 opacity-50 cursor-not-allowed"
-              title="Coming Soon"
+            <Link
+              href="/lobby/create"
+              className="glass-card px-5 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 hover-elevate hover:border-primary/50 transition-colors"
             >
               <Plus className="w-4 h-4" />
               Create Private League
-            </button>
+            </Link>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
