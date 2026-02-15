@@ -85,10 +85,10 @@ export const authOptions: NextAuthOptions = {
         return {
           ...token,
           id: user.id,
-          username: user.username,
+          username: user.username || '',
           mobile: user.mobile,
           avatar: user.avatar,
-        }
+        } as any
       }
       return token
     },
