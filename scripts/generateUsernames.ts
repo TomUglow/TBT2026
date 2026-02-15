@@ -8,7 +8,7 @@ async function generateUsernames() {
     const usersWithoutUsername = await prisma.user.findMany({
       where: {
         username: {
-          isNull: true,
+          equals: null,
         },
       },
     })
