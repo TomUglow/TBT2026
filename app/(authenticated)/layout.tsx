@@ -4,8 +4,6 @@ import Navbar from '@/components/Navbar'
 import LiveScoresTicker from '@/components/LiveScoresTicker'
 import AuthGuard from '@/components/AuthGuard'
 
-export const dynamic = 'force-dynamic'
-
 export default function AuthenticatedLayout({
   children,
 }: {
