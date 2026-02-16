@@ -5,7 +5,7 @@ import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { ChevronDown } from 'lucide-react'
-import { useTheme } from '@/components/ThemeProvider'
+import { useTheme } from '@/components/providers/ThemeProvider'
 
 // Sample sports and teams data - you can replace this with actual data
 const SPORTS_DATA: Record<string, string[]> = {

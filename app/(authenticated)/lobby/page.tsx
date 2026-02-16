@@ -8,7 +8,7 @@ import {
   Lock, Globe, Target, Plus,
 } from 'lucide-react'
 import type { Competition } from '@/lib/types'
-import MainEventCard from '@/components/MainEventCard'
+import MainEventCard from '@/components/dashboard/MainEventCard'
 
 function CompetitionRow({ competition }: { competition: Competition }) {
   return (
@@ -82,6 +82,9 @@ export default function LobbyPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [joinCode, setJoinCode] = useState('')
+  const [joiningByCode, setJoiningByCode] = useState(false)
+  const [joinCodeError, setJoinCodeError] = useState('')
+  const [joinCodeSuccess, setJoinCodeSuccess] = useState('')
 
   useEffect(() => {
     const fetchCompetitions = async () => {
@@ -98,6 +101,42 @@ export default function LobbyPage() {
 
     fetchCompetitions()
   }, [])
+
+  const handleJoinByCode = async () => {
+    if (!joinCode.trim()) return
+
+    setJoiningByCode(true)
+    setJoinCodeError('')
+    setJoinCodeSuccess('')
+
+    try {
+      const res = await fetch('/api/competitions/join-by-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inviteCode: joinCode.toUpperCase() }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setJoinCodeError(data.error || 'Failed to join competition')
+        return
+      }
+
+      setJoinCodeSuccess('Successfully joined competition!')
+      setJoinCode('')
+
+      // Refresh competitions list
+      const compsRes = await fetch('/api/competitions')
+      const compsData = await compsRes.json()
+      if (Array.isArray(compsData)) setCompetitions(compsData)
+    } catch (error) {
+      console.error('Error joining by code:', error)
+      setJoinCodeError('An error occurred. Please try again.')
+    } finally {
+      setJoiningByCode(false)
+    }
+  }
 
   const filteredCompetitions = competitions.filter((c) => {
     if (search) return c.name.toLowerCase().includes(search.toLowerCase())
@@ -134,24 +173,42 @@ export default function LobbyPage() {
       <MainEventCard competitions={competitions} />
 
       {/* Join Private Code */}
-      <div className="glass-card rounded-xl">
-        <div className="flex flex-col sm:flex-row items-center gap-3 p-3">
-          <div className="flex items-center gap-2 flex-1 min-w-0 w-full sm:w-auto">
-            <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <span className="text-sm text-muted-foreground whitespace-nowrap">Private Code:</span>
-            <input
-              placeholder="Enter invite code"
-              value={joinCode}
-              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-              className="bg-muted/50 border border-border rounded-lg px-3 py-1.5 text-sm font-mono flex-1 min-w-0 focus:outline-none focus:ring-1 focus:ring-primary"
-            />
+      <div className="glass-card rounded-xl p-4">
+        <div className="space-y-3">
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <div className="flex items-center gap-2 flex-1 min-w-0 w-full sm:w-auto">
+              <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+              <span className="text-sm text-muted-foreground whitespace-nowrap">Invite Code:</span>
+              <input
+                placeholder="Enter invite code"
+                value={joinCode}
+                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                disabled={joiningByCode}
+                className="bg-muted/50 border border-border rounded-lg px-3 py-1.5 text-sm font-mono flex-1 min-w-0 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+              />
+            </div>
+            <button
+              onClick={handleJoinByCode}
+              disabled={!joinCode.trim() || joiningByCode}
+              className="brand-gradient text-white text-sm font-bold px-4 py-1.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover-elevate w-full sm:w-auto"
+            >
+              {joiningByCode ? 'Joining...' : 'Join'}
+            </button>
           </div>
-          <button
-            disabled={!joinCode}
-            className="brand-gradient text-white text-sm font-bold px-4 py-1.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover-elevate"
-          >
-            Join
-          </button>
+
+          {/* Error message */}
+          {joinCodeError && (
+            <div className="text-sm text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+              {joinCodeError}
+            </div>
+          )}
+
+          {/* Success message */}
+          {joinCodeSuccess && (
+            <div className="text-sm text-green-500 bg-green-500/10 border border-green-500/20 rounded-lg px-3 py-2">
+              {joinCodeSuccess}
+            </div>
+          )}
         </div>
       </div>
 

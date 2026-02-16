@@ -1,8 +1,8 @@
 import Link from 'next/link'
 import { Trophy, TrendingUp, Users, ArrowRight  } from 'lucide-react'
-import LandingHeader from '@/components/LandingHeader'
-import FeatureCard from '@/components/FeatureCard'
-import MockEventTable from '@/components/MockEventTable'
+import LandingHeader from '@/components/layout/LandingHeader'
+import FeatureCard from '@/components/landing/FeatureCard'
+import MockEventTable from '@/components/landing/MockEventTable'
 
 export default function LandingPage() {
   return (

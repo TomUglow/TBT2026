@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { useTheme } from '@/components/ThemeProvider'
+import { useTheme } from '@/components/providers/ThemeProvider'
 
 export default function LoginPage() {
   const router = useRouter()

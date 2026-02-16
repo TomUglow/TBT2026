@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { LayoutDashboard, Trophy, Menu, X, Sun, Moon, LogOut } from 'lucide-react'
-import { useTheme } from '@/components/ThemeProvider'
+import { useTheme } from '@/components/providers/ThemeProvider'
 
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },

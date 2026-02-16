@@ -10,8 +10,8 @@ import {
 } from 'lucide-react'
 import { SPORT_COLORS } from '@/lib/constants'
 import type { ScoreGame, Competition } from '@/lib/types'
-import MainEventCard from '@/components/MainEventCard'
-import ProfileCompletionModal from '@/components/ProfileCompletionModal'
+import MainEventCard from '@/components/dashboard/MainEventCard'
+import ProfileCompletionModal from '@/components/dashboard/ProfileCompletionModal'
 
 function formatCountdown(eventDate: Date): string {
   const now = new Date()

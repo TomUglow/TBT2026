@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import SessionProvider from '@/components/SessionProvider'
-import ThemeProvider from '@/components/ThemeProvider'
+import SessionProvider from '@/components/providers/SessionProvider'
+import ThemeProvider from '@/components/providers/ThemeProvider'
 
 export const metadata: Metadata = {
   title: 'The Big Tip - Sports Tipping Competition',

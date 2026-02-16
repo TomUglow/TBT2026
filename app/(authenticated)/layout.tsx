@@ -1,8 +1,8 @@
 'use client'
 
-import Navbar from '@/components/Navbar'
-import LiveScoresTicker from '@/components/LiveScoresTicker'
-import AuthGuard from '@/components/AuthGuard'
+import Navbar from '@/components/layout/Navbar'
+import LiveScoresTicker from '@/components/layout/LiveScoresTicker'
+import AuthGuard from '@/components/auth/AuthGuard'
 
 export default function AuthenticatedLayout({
   children,

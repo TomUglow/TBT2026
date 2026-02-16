@@ -9,12 +9,9 @@ export const dynamic = 'force-dynamic'
 
 /**
  * Join a competition using an invite code
- * POST /api/competitions/[competitionId]/join-by-code
+ * POST /api/competitions/join-by-code
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { competitionId: string } }
-) {
+export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     const userId = requireAuth(session)
@@ -31,12 +28,9 @@ export async function POST(
 
     const { inviteCode } = result.data
 
-    // Find competition by invite code and competitionId
-    const competition = await prisma.competition.findFirst({
-      where: {
-        id: params.competitionId,
-        inviteCode,
-      },
+    // Find competition by invite code
+    const competition = await prisma.competition.findUnique({
+      where: { inviteCode },
     })
 
     if (!competition) {
@@ -48,7 +42,7 @@ export async function POST(
       where: {
         userId_competitionId: {
           userId,
-          competitionId: params.competitionId,
+          competitionId: competition.id,
         },
       },
     })
@@ -61,12 +55,16 @@ export async function POST(
     await prisma.competitionUser.create({
       data: {
         userId,
-        competitionId: params.competitionId,
+        competitionId: competition.id,
       },
     })
 
     return apiSuccess(
-      { success: true, message: 'Successfully joined competition' },
+      {
+        success: true,
+        message: 'Successfully joined competition',
+        competitionId: competition.id,
+      },
       201
     )
   } catch (error) {
