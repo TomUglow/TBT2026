@@ -5,7 +5,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { LayoutDashboard, Trophy, Menu, X, Sun, Moon, LogOut } from 'lucide-react'
+import { LayoutDashboard, Trophy, Menu, X, Sun, Moon, LogOut, ShieldCheck } from 'lucide-react'
 import { useTheme } from '@/components/providers/ThemeProvider'
 
 const navLinks = [
@@ -61,6 +61,19 @@ export default function Navbar() {
                     </Link>
                   )
                 })}
+                {session.user?.isAdmin && (
+                  <Link
+                    href="/admin"
+                    className={`text-sm font-semibold transition-colors flex items-center gap-2 px-3 py-1.5 rounded-lg ${
+                      pathname.startsWith('/admin')
+                        ? 'text-primary bg-primary/10'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    Admin
+                  </Link>
+                )}
               </div>
             )}
           </div>
@@ -132,6 +145,20 @@ export default function Navbar() {
                   </Link>
                 )
               })}
+              {session.user?.isAdmin && (
+                <Link
+                  href="/admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+                    pathname.startsWith('/admin')
+                      ? 'text-primary bg-primary/10'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                  }`}
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  Admin
+                </Link>
+              )}
             </div>
             <div className="border-t border-border px-4 py-3">
               <button

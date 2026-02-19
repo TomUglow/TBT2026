@@ -9,6 +9,7 @@ declare module 'next-auth' {
     username?: string
     mobile?: string | null
     avatar?: string | null
+    isAdmin?: boolean
   }
   interface Session {
     user: User & {
@@ -17,6 +18,7 @@ declare module 'next-auth' {
       username: string
       mobile?: string | null
       avatar?: string | null
+      isAdmin?: boolean
     }
   }
 }
@@ -27,6 +29,7 @@ declare module 'next-auth/jwt' {
     username: string
     mobile?: string | null
     avatar?: string | null
+    isAdmin?: boolean
   }
 }
 
@@ -69,6 +72,7 @@ export const authOptions: NextAuthOptions = {
           username: user.username,
           mobile: user.mobile,
           avatar: user.avatar,
+          isAdmin: user.isAdmin,
         }
       }
     })
@@ -88,6 +92,7 @@ export const authOptions: NextAuthOptions = {
           username: user.username || '',
           mobile: user.mobile,
           avatar: user.avatar,
+          isAdmin: user.isAdmin ?? false,
         }
       }
       return token
@@ -101,6 +106,7 @@ export const authOptions: NextAuthOptions = {
           username: token.username,
           mobile: token.mobile,
           avatar: token.avatar,
+          isAdmin: token.isAdmin,
         }
       }
     }

@@ -1,18 +1,29 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { format, differenceInHours, differenceInMinutes, differenceInDays } from 'date-fns'
 import {
   Trophy, Target, TrendingUp, Calendar, CheckCircle2, Circle, Users, Plus, Lock, X,
+  ChevronLeft, ChevronRight, Globe,
 } from 'lucide-react'
 import { SPORT_COLORS } from '@/lib/constants'
 import { clientCache } from '@/lib/client-cache'
 import type { ScoreGame, Competition } from '@/lib/types'
 import MainEventCard from '@/components/dashboard/MainEventCard'
 import ProfileCompletionModal from '@/components/dashboard/ProfileCompletionModal'
+
+function formatTimeAgo(dateStr: string): string {
+  const diffMs = Date.now() - new Date(dateStr).getTime()
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  if (diffHours < 1) return 'just now'
+  if (diffHours < 24) return `${diffHours}h ago`
+  if (diffDays === 1) return 'yesterday'
+  return `${diffDays}d ago`
+}
 
 function formatCountdown(eventDate: Date): string {
   const now = new Date()
@@ -55,7 +66,7 @@ function GameCard({ game, pick }: { game: ScoreGame; pick?: GamePick | null }) {
   const pickPending = pick && pick.isCorrect === null
 
   return (
-    <div className={`glass-card rounded-xl p-3 space-y-2 hover-elevate ${isCompleted ? 'opacity-80' : ''}`}>
+    <div className={`glass-card rounded-xl p-3 flex flex-col gap-2 h-full hover-elevate ${isCompleted ? 'opacity-80' : ''}`}>
       <div className="flex items-center justify-between gap-2">
         <span
           className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded border"
@@ -71,24 +82,24 @@ function GameCard({ game, pick }: { game: ScoreGame; pick?: GamePick | null }) {
         ) : isCompleted ? (
           <span className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
             <CheckCircle2 className="w-3 h-3" />
-            FT
+            FT · {formatTimeAgo(game.commenceTime)}
           </span>
         ) : (
           <span className="text-[10px] text-muted-foreground font-medium">{timeLabel}</span>
         )}
       </div>
-      <div className="space-y-1">
-        <div className="flex items-center justify-between gap-2 text-xs font-semibold">
-          <span className="truncate">{game.homeTeam}</span>
-          {hasScores && <span className="font-bold tabular-nums">{homeScore}</span>}
+      <div className="flex-1 space-y-1">
+        <div className="flex items-start justify-between gap-2 text-xs font-semibold">
+          <span className="leading-snug">{game.homeTeam}</span>
+          {hasScores && <span className="font-bold tabular-nums flex-shrink-0">{homeScore}</span>}
         </div>
-        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-          <span className="truncate">{game.awayTeam}</span>
-          {hasScores && <span className="font-bold tabular-nums">{awayScore}</span>}
+        <div className="flex items-start justify-between gap-2 text-xs text-muted-foreground">
+          <span className="leading-snug">{game.awayTeam}</span>
+          {hasScores && <span className="font-bold tabular-nums flex-shrink-0">{awayScore}</span>}
         </div>
       </div>
       {pick && (
-        <div className={`flex items-center gap-1.5 text-[10px] font-semibold px-2 py-1 rounded border truncate ${
+        <div className={`flex items-center gap-1.5 text-[10px] font-semibold px-2 py-1 rounded border ${
           pickCorrect
             ? 'bg-green-500/15 text-green-500 border-green-500/25'
             : pickWrong
@@ -124,6 +135,98 @@ function findPickForGame(game: ScoreGame, picks: any[]): GamePick | null {
   return null
 }
 
+function GameRowScroller({ games, userPicks }: { games: ScoreGame[]; userPicks: any[] }) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const scroll = (dir: 'left' | 'right') => {
+    const el = scrollRef.current
+    if (!el) return
+    el.scrollBy({ left: dir === 'right' ? el.clientWidth : -el.clientWidth, behavior: 'smooth' })
+  }
+
+  // Group games into pages of 6 (3 columns × 2 rows)
+  const pages: ScoreGame[][] = []
+  for (let i = 0; i < games.length; i += 6) pages.push(games.slice(i, i + 6))
+
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        onClick={() => scroll('left')}
+        className="flex-shrink-0 w-7 h-7 rounded-full bg-card border border-border flex items-center justify-center hover:bg-muted transition-colors"
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+      <div
+        ref={scrollRef}
+        className="flex-1 flex overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+      >
+        {pages.map((page, i) => (
+          <div key={i} className="flex-shrink-0 w-full grid grid-cols-3 gap-3 items-stretch">
+            {page.map((game) => (
+              <GameCard key={game.id} game={game} pick={findPickForGame(game, userPicks)} />
+            ))}
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={() => scroll('right')}
+        className="flex-shrink-0 w-7 h-7 rounded-full bg-card border border-border flex items-center justify-center hover:bg-muted transition-colors"
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
+    </div>
+  )
+}
+
+function CompetitionRow({ competition }: { competition: Competition }) {
+  return (
+    <Link href={`/lobby/${competition.id}`}>
+      <div className="lobby-row hover-elevate cursor-pointer group">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center flex-shrink-0">
+            {competition.isPublic ? (
+              <Globe className="w-4 h-4 text-primary" />
+            ) : (
+              <Lock className="w-4 h-4 text-primary" />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
+                {competition.name}
+              </span>
+              {competition.isPublic && competition.status === 'active' && (
+                <span
+                  className="text-[9px] uppercase tracking-wider font-black px-1.5 py-0.5 rounded flex-shrink-0"
+                  style={{ backgroundColor: '#FFD700', color: '#000' }}
+                >
+                  Main
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground truncate">
+              {competition.description || 'Tipping competition'}
+            </div>
+          </div>
+        </div>
+        <div className="hidden sm:flex items-center gap-6 text-sm flex-shrink-0">
+          <div className="flex items-center gap-1.5 text-muted-foreground w-16">
+            <Target className="w-3.5 h-3.5" />
+            <span className="font-mono">{competition.eventCount}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-muted-foreground w-16">
+            <Users className="w-3.5 h-3.5" />
+            <span className="font-mono">{competition.participantCount}</span>
+          </div>
+          <span className="text-xs text-muted-foreground w-20 text-center capitalize">
+            {competition.status}
+          </span>
+        </div>
+        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+      </div>
+    </Link>
+  )
+}
+
 export default function Dashboard() {
   const { data: session } = useSession()
   const router = useRouter()
@@ -131,6 +234,8 @@ export default function Dashboard() {
   const [scores, setScores] = useState<ScoreGame[]>([])
   const [userPicks, setUserPicks] = useState<any[]>([])
   const [userRank, setUserRank] = useState<number | null>(null)
+  const [leaderboard, setLeaderboard] = useState<any[]>([])
+  const [mainCompetitionId, setMainCompetitionId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [profileCompleted, setProfileCompleted] = useState(true)
@@ -138,8 +243,6 @@ export default function Dashboard() {
   const [joinCode, setJoinCode] = useState('')
   const [joiningByCode, setJoiningByCode] = useState(false)
   const [joinError, setJoinError] = useState('')
-  const [showAllUpcoming, setShowAllUpcoming] = useState(false)
-  const [showAllResults, setShowAllResults] = useState(false)
 
   useEffect(() => {
     if (session) {
@@ -177,11 +280,13 @@ export default function Dashboard() {
       }
 
       // Serve cached dashboard data immediately while scores fetch in background
-      const cached = clientCache.get<{ competitions: Competition[]; userPicks: any[]; userRank: number | null }>(CACHE_KEY)
+      const cached = clientCache.get<{ competitions: Competition[]; userPicks: any[]; userRank: number | null; leaderboard: any[]; mainCompetitionId: string | null }>(CACHE_KEY)
       if (cached) {
         setCompetitions(cached.competitions)
         setUserPicks(cached.userPicks)
         setUserRank(cached.userRank)
+        setLeaderboard(cached.leaderboard ?? [])
+        setMainCompetitionId(cached.mainCompetitionId ?? null)
       }
 
       const fetches: Promise<any>[] = [
@@ -210,11 +315,15 @@ export default function Dashboard() {
             competitions: Array.isArray(dashboardData.competitions) ? dashboardData.competitions : [],
             userPicks: Array.isArray(dashboardData.userPicks) ? dashboardData.userPicks : [],
             userRank: dashboardData.userRank ?? null,
+            leaderboard: Array.isArray(dashboardData.leaderboard) ? dashboardData.leaderboard : [],
+            mainCompetitionId: dashboardData.mainCompetitionId ?? null,
           }
           clientCache.set(CACHE_KEY, toCache, 2 * 60 * 1000)
           setCompetitions(toCache.competitions)
           setUserPicks(toCache.userPicks)
           setUserRank(toCache.userRank)
+          setLeaderboard(toCache.leaderboard)
+          setMainCompetitionId(toCache.mainCompetitionId)
         }
       }
     } catch (error) {
@@ -252,8 +361,8 @@ export default function Dashboard() {
   const joinedComps = competitions.filter((c) => c.isJoined)
   const userPicksCount = userPicks.length
   const correctPicks = userPicks.filter((p) => p.isCorrect).length
-  const upcomingGames = scores.filter((g) => !g.completed)
-  const recentResults = scores.filter((g) => g.completed && g.scores)
+  const upcomingGames = scores.filter((g) => !g.completed).slice(0, 18)
+  const recentResults = scores.filter((g) => g.completed && g.scores).slice(0, 18)
 
   if (loading) {
     return (
@@ -317,7 +426,7 @@ export default function Dashboard() {
         <MainEventCard competitions={competitions} />
 
         {/* Empty State */}
-        {competitions.length === 0 && upcomingGames.length === 0 && recentResults.length === 0 && (
+        {competitions.length === 0 && upcomingGames.length < 6 && recentResults.length < 6 && (
           <div className="text-center py-16">
             <Trophy className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
             <h2 className="text-xl font-bold mb-2 font-display">No Events Yet</h2>
@@ -332,50 +441,118 @@ export default function Dashboard() {
         )}
 
         {/* Upcoming / Live Matches */}
-        {upcomingGames.length > 0 && (
+        {upcomingGames.length >= 6 && (
           <section>
             <div className="flex items-center gap-2 mb-4">
               <Calendar className="w-5 h-5 gold-accent" />
               <h2 className="text-lg font-bold uppercase tracking-wider font-display">Upcoming / Live Matches</h2>
             </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {(showAllUpcoming ? upcomingGames : upcomingGames.slice(0, 6)).map((game) => (
-                <GameCard key={game.id} game={game} pick={findPickForGame(game, userPicks)} />
-              ))}
-            </div>
-            {upcomingGames.length > 6 && (
-              <button
-                onClick={() => setShowAllUpcoming(!showAllUpcoming)}
-                className="mt-3 w-full text-xs font-semibold text-muted-foreground hover:text-foreground py-2.5 border border-border/50 rounded-xl hover:bg-muted/20 transition-colors"
-              >
-                {showAllUpcoming ? 'Show less' : `Show ${upcomingGames.length - 6} more`}
-              </button>
-            )}
+            <GameRowScroller games={upcomingGames} userPicks={userPicks} />
           </section>
         )}
 
         {/* Results */}
-        {recentResults.length > 0 && (
+        {recentResults.length >= 6 && (
           <section>
             <div className="flex items-center gap-2 mb-4">
               <CheckCircle2 className="w-5 h-5" style={{ color: '#4CAF50' }} />
               <h2 className="text-lg font-bold uppercase tracking-wider font-display">Results</h2>
             </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {(showAllResults ? recentResults : recentResults.slice(0, 6)).map((game) => (
-                <GameCard key={game.id} game={game} pick={findPickForGame(game, userPicks)} />
-              ))}
-            </div>
-            {recentResults.length > 6 && (
-              <button
-                onClick={() => setShowAllResults(!showAllResults)}
-                className="mt-3 w-full text-xs font-semibold text-muted-foreground hover:text-foreground py-2.5 border border-border/50 rounded-xl hover:bg-muted/20 transition-colors"
-              >
-                {showAllResults ? 'Show less' : `Show ${recentResults.length - 6} more`}
-              </button>
-            )}
+            <GameRowScroller games={recentResults} userPicks={userPicks} />
           </section>
         )}
+
+        {/* My Competitions + Main Event Leaderboard */}
+        <section className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+
+          {/* Competitions list */}
+          <div className="lg:col-span-3 space-y-2">
+            <div className="flex items-center gap-2 px-1">
+              <Trophy className="w-4 h-4" style={{ color: '#FFD700' }} />
+              <h2 className="text-lg font-bold uppercase tracking-wider font-display">
+                My Competitions ({joinedComps.length})
+              </h2>
+            </div>
+            <div className="hidden sm:flex items-center gap-4 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border">
+              <div className="flex-1">Competition</div>
+              <div className="w-16 text-center">Events</div>
+              <div className="w-16 text-center">Entries</div>
+              <div className="w-20 text-center">Status</div>
+              <div className="w-4" />
+            </div>
+            <div className="glass-card rounded-xl overflow-hidden">
+              {joinedComps.length > 0 ? (
+                joinedComps.map((comp) => (
+                  <CompetitionRow key={comp.id} competition={comp} />
+                ))
+              ) : (
+                <div className="py-12 text-center text-muted-foreground">
+                  <Trophy className="w-8 h-8 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">You haven&apos;t joined any competitions yet.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Main event leaderboard */}
+          <div className="lg:col-span-2 lg:sticky lg:top-6 space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-4 h-4" style={{ color: '#FFD700' }} />
+                <h2 className="text-lg font-bold uppercase tracking-wider font-display">Top Tipsters</h2>
+              </div>
+              {mainCompetitionId && (
+                <Link href={`/lobby/${mainCompetitionId}`} className="text-xs text-primary hover:underline font-semibold">
+                  Full Leaderboard
+                </Link>
+              )}
+            </div>
+            {leaderboard.length > 0 ? (
+              <div className="glass-card rounded-xl overflow-hidden">
+                <div className="flex items-center gap-3 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border">
+                  <div className="w-6 text-center">#</div>
+                  <div className="flex-1">Tipster</div>
+                  <div className="w-12 text-right">Score</div>
+                </div>
+                {leaderboard.map((entry) => (
+                  <div
+                    key={entry.user.id}
+                    className="flex items-center gap-3 px-4 py-2.5 border-b border-border last:border-b-0"
+                  >
+                    <div className="w-6 text-center flex-shrink-0">
+                      {entry.rank <= 3 ? (
+                        <span
+                          className="text-xs font-black w-5 h-5 rounded-full flex items-center justify-center"
+                          style={{
+                            backgroundColor: entry.rank === 1 ? '#FFD700' : entry.rank === 2 ? '#C0C0C0' : '#CD7F32',
+                            color: '#000',
+                          }}
+                        >
+                          {entry.rank}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-bold text-muted-foreground">{entry.rank}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className="w-6 h-6 brand-gradient rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0">
+                        {entry.user.name?.[0]?.toUpperCase() || 'U'}
+                      </div>
+                      <span className="text-sm font-medium truncate">{entry.user.name || entry.user.email}</span>
+                    </div>
+                    <span className="text-sm font-bold tabular-nums w-12 text-right">{entry.score}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="glass-card rounded-xl py-10 text-center text-muted-foreground">
+                <Trophy className="w-7 h-7 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">No leaderboard data yet.</p>
+              </div>
+            )}
+          </div>
+
+        </section>
       </div>
 
       <ProfileCompletionModal

@@ -67,3 +67,17 @@ export function getAuthenticatedUser(session: Session | null): string | Response
 export function requireAuth(session: Session | null): string | Response {
   return getAuthenticatedUser(session)
 }
+
+/**
+ * Require admin privileges
+ * Returns user ID if admin, or 401/403 Response
+ */
+export function requireAdmin(session: Session | null): string | Response {
+  if (!session?.user?.id) {
+    return apiError('Unauthorized', 401)
+  }
+  if (!session.user.isAdmin) {
+    return apiError('Forbidden', 403)
+  }
+  return session.user.id
+}

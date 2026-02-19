@@ -20,6 +20,11 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
+    // Admin route: authenticated but not admin → redirect to dashboard
+    if (pathname.startsWith('/admin') && !token.isAdmin) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
     // Allow authenticated user to access other routes
     return NextResponse.next()
   }
@@ -27,7 +32,12 @@ export async function middleware(request: NextRequest) {
   // If user is NOT authenticated
   if (!token) {
     // If trying to access protected routes, redirect to login
-    if (pathname.startsWith('/dashboard') || pathname.startsWith('/account') || pathname.startsWith('/lobby')) {
+    if (
+      pathname.startsWith('/dashboard') ||
+      pathname.startsWith('/account') ||
+      pathname.startsWith('/lobby') ||
+      pathname.startsWith('/admin')
+    ) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
 
