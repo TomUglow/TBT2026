@@ -90,11 +90,11 @@ function GameCard({ game, pick }: { game: ScoreGame; pick?: GamePick | null }) {
       </div>
       <div className="flex-1 space-y-1">
         <div className="flex items-start justify-between gap-2 text-xs font-semibold">
-          <span className="leading-snug">{game.homeTeam}</span>
+          <span className="leading-snug min-w-0 break-words">{game.homeTeam}</span>
           {hasScores && <span className="font-bold tabular-nums flex-shrink-0">{homeScore}</span>}
         </div>
         <div className="flex items-start justify-between gap-2 text-xs text-muted-foreground">
-          <span className="leading-snug">{game.awayTeam}</span>
+          <span className="leading-snug min-w-0 break-words">{game.awayTeam}</span>
           {hasScores && <span className="font-bold tabular-nums flex-shrink-0">{awayScore}</span>}
         </div>
       </div>
@@ -137,39 +137,74 @@ function findPickForGame(game: ScoreGame, picks: any[]): GamePick | null {
 
 function GameRowScroller({ games, userPicks }: { games: ScoreGame[]; userPicks: any[] }) {
   const scrollRef = useRef<HTMLDivElement>(null)
-  const scroll = (dir: 'left' | 'right') => {
+  const [currentCol, setCurrentCol] = useState(0)
+  const [atStart, setAtStart] = useState(true)
+  const [atEnd, setAtEnd] = useState(false)
+
+  // Group into columns of 2, drop any trailing odd game to keep multiples of 2
+  const columns: ScoreGame[][] = []
+  for (let i = 0; i + 1 < games.length; i += 2) {
+    columns.push([games[i], games[i + 1]])
+  }
+  const totalCols = columns.length
+
+  useEffect(() => {
     const el = scrollRef.current
     if (!el) return
-    el.scrollBy({ left: dir === 'right' ? el.clientWidth : -el.clientWidth, behavior: 'smooth' })
+    const update = () => {
+      setAtStart(el.scrollLeft <= 0)
+      setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 1)
+    }
+    update()
+    el.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    return () => {
+      el.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
+  }, [])
+
+  const getColWidth = (): number => {
+    const firstChild = scrollRef.current?.firstElementChild as HTMLElement | null
+    return firstChild ? firstChild.offsetWidth + 12 : 0 // 12px = gap-3
   }
 
-  // Group games into pages of 6 (3 columns × 2 rows)
-  const pages: ScoreGame[][] = []
-  for (let i = 0; i < games.length; i += 6) pages.push(games.slice(i, i + 6))
+  const navigate = (dir: 'left' | 'right') => {
+    const next = dir === 'right'
+      ? Math.min(totalCols - 1, currentCol + 1)
+      : Math.max(0, currentCol - 1)
+    setCurrentCol(next)
+    scrollRef.current?.scrollTo({ left: next * getColWidth(), behavior: 'smooth' })
+  }
 
   return (
     <div className="flex items-center gap-2">
       <button
-        onClick={() => scroll('left')}
-        className="flex-shrink-0 w-7 h-7 rounded-full bg-card border border-border flex items-center justify-center hover:bg-muted transition-colors"
+        onClick={() => navigate('left')}
+        disabled={atStart}
+        className="flex-shrink-0 w-7 h-7 rounded-full bg-card border border-border flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
       >
         <ChevronLeft className="w-4 h-4" />
       </button>
       <div
         ref={scrollRef}
-        className="flex-1 flex overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+        className="flex-1 flex overflow-x-hidden gap-3"
       >
-        {pages.map((page, i) => (
-          <div key={i} className="flex-shrink-0 w-full grid grid-cols-3 gap-3 items-stretch">
-            {page.map((game) => (
+        {columns.map((col, i) => (
+          <div
+            key={i}
+            className="flex-shrink-0 w-full sm:w-[calc(50%-6px)] md:w-[calc(33.333%-8px)] flex flex-col gap-3"
+          >
+            {col.map((game) => (
               <GameCard key={game.id} game={game} pick={findPickForGame(game, userPicks)} />
             ))}
           </div>
         ))}
       </div>
       <button
-        onClick={() => scroll('right')}
-        className="flex-shrink-0 w-7 h-7 rounded-full bg-card border border-border flex items-center justify-center hover:bg-muted transition-colors"
+        onClick={() => navigate('right')}
+        disabled={atEnd}
+        className="flex-shrink-0 w-7 h-7 rounded-full bg-card border border-border flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
       >
         <ChevronRight className="w-4 h-4" />
       </button>
