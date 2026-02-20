@@ -304,48 +304,38 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     const CACHE_KEY = 'dashboard'
-    try {
-      const fetchWithTimeout = (url: string, timeout = 5000) => {
-        return Promise.race([
-          fetch(url),
-          new Promise<Response>((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout')), timeout)
-          ),
-        ])
-      }
 
-      // Serve cached dashboard data immediately while scores fetch in background
-      const cached = clientCache.get<{ competitions: Competition[]; userPicks: any[]; userRank: number | null; leaderboard: any[]; mainCompetitionId: string | null }>(CACHE_KEY)
-      if (cached) {
-        setCompetitions(cached.competitions)
-        setUserPicks(cached.userPicks)
-        setUserRank(cached.userRank)
-        setLeaderboard(cached.leaderboard ?? [])
-        setMainCompetitionId(cached.mainCompetitionId ?? null)
-      }
+    const fetchWithTimeout = (url: string, timeout = 8000) => {
+      return Promise.race([
+        fetch(url),
+        new Promise<Response>((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout')), timeout)
+        ),
+      ])
+    }
 
-      const fetches: Promise<any>[] = [
-        fetchWithTimeout('/api/scores').catch((err) => {
-          console.error('Scores API failed:', err)
-          return { json: async () => [] }
-        }),
-      ]
-      if (!cached) {
-        fetches.push(
-          fetchWithTimeout('/api/dashboard').catch((err) => {
-            console.error('Dashboard API failed:', err)
-            return { ok: false, json: async () => ({}) }
-          })
-        )
-      }
+    // Serve cached dashboard data immediately
+    const cached = clientCache.get<{ competitions: Competition[]; userPicks: any[]; userRank: number | null; leaderboard: any[]; mainCompetitionId: string | null }>(CACHE_KEY)
+    if (cached) {
+      setCompetitions(cached.competitions)
+      setUserPicks(cached.userPicks)
+      setUserRank(cached.userRank)
+      setLeaderboard(cached.leaderboard ?? [])
+      setMainCompetitionId(cached.mainCompetitionId ?? null)
+    }
 
-      const [scoresRes, dashboardRes] = await Promise.all(fetches)
-      const scoresData = await scoresRes.json()
-      setScores(Array.isArray(scoresData) ? scoresData : [])
+    // Scores load independently and never block the loading gate
+    fetchWithTimeout('/api/scores')
+      .then((r) => r.json())
+      .then((d) => setScores(Array.isArray(d) ? d : []))
+      .catch((err) => console.error('Scores API failed:', err))
 
-      if (dashboardRes) {
-        const dashboardData = await dashboardRes.json()
-        if ((dashboardRes as Response).ok !== false) {
+    // Dashboard controls the loading spinner; skip if client cache is warm
+    if (!cached) {
+      try {
+        const res = await fetchWithTimeout('/api/dashboard')
+        if (res.ok) {
+          const dashboardData = await res.json()
           const toCache = {
             competitions: Array.isArray(dashboardData.competitions) ? dashboardData.competitions : [],
             userPicks: Array.isArray(dashboardData.userPicks) ? dashboardData.userPicks : [],
@@ -360,12 +350,12 @@ export default function Dashboard() {
           setLeaderboard(toCache.leaderboard)
           setMainCompetitionId(toCache.mainCompetitionId)
         }
+      } catch (error) {
+        console.error('Dashboard API failed:', error)
       }
-    } catch (error) {
-      console.error('Error fetching data:', error)
-    } finally {
-      setLoading(false)
     }
+
+    setLoading(false)
   }
 
   const handleJoinByCode = async () => {
