@@ -18,10 +18,11 @@ import {
   Pencil,
   X,
   Check,
+  Bell,
 } from 'lucide-react'
 import { SPORT_COLORS } from '@/lib/constants'
 
-type Tab = 'members' | 'events' | 'competitions' | 'results'
+type Tab = 'members' | 'events' | 'competitions' | 'results' | 'requests'
 
 interface AdminUser {
   id: string
@@ -56,6 +57,26 @@ interface AdminCompetition {
   endDate: string
   owner: { id: string; name: string | null; email: string }
   _count: { users: number; events: number }
+}
+
+interface AdminNotification {
+  id: string
+  type: string
+  title: string
+  message: string
+  data: {
+    requestMeta?: {
+      sport?: string
+      eventTitle?: string
+      eventDate?: string
+      options?: string[]
+    }
+    competitionId?: string
+    competitionName?: string
+    requesterName?: string
+  } | null
+  read: boolean
+  createdAt: string
 }
 
 const SPORTS = ['AFL', 'NRL', 'Basketball', 'Soccer', 'Ice Hockey', 'Cricket', 'Tennis', 'Rugby Union']
@@ -121,6 +142,11 @@ export default function AdminPage() {
   const [resultLoading, setResultLoading] = useState<Record<string, boolean>>({})
   const [resultSuccess, setResultSuccess] = useState<Record<string, boolean>>({})
 
+  // Requests
+  const [requests, setRequests] = useState<AdminNotification[]>([])
+  const [requestsLoading, setRequestsLoading] = useState(false)
+  const [dismissingRequest, setDismissingRequest] = useState<string | null>(null)
+
   useEffect(() => {
     if (session && !session.user.isAdmin) router.push('/dashboard')
   }, [session, router])
@@ -165,11 +191,25 @@ export default function AdminPage() {
     }
   }, [])
 
+  const fetchRequests = useCallback(async () => {
+    setRequestsLoading(true)
+    try {
+      const res = await fetch('/api/notifications?type=platform_event_request')
+      if (res.ok) {
+        const data = await res.json()
+        setRequests(Array.isArray(data.data) ? data.data : [])
+      }
+    } finally {
+      setRequestsLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (activeTab === 'members') fetchUsers()
     if (activeTab === 'events' || activeTab === 'results') fetchEvents()
     if (activeTab === 'competitions') { fetchCompetitions(); fetchEvents() }
-  }, [activeTab, fetchUsers, fetchEvents, fetchCompetitions])
+    if (activeTab === 'requests') fetchRequests()
+  }, [activeTab, fetchUsers, fetchEvents, fetchCompetitions, fetchRequests])
 
   // ── Members ──────────────────────────────────────────────────────────────
   const handleToggleAdmin = async (userId: string, currentIsAdmin: boolean) => {
@@ -313,17 +353,42 @@ export default function AdminPage() {
     } finally { setResultLoading((prev) => ({ ...prev, [eventId]: false })) }
   }
 
+  // ── Requests ──────────────────────────────────────────────────────────────
+  const handleDismissRequest = async (notificationId: string) => {
+    setDismissingRequest(notificationId)
+    try {
+      await fetch(`/api/notifications?id=${notificationId}`, { method: 'DELETE' })
+      setRequests((prev) => prev.filter((r) => r.id !== notificationId))
+    } finally {
+      setDismissingRequest(null)
+    }
+  }
+
+  const handleCreateFromRequest = (req: AdminNotification) => {
+    const meta = req.data?.requestMeta
+    if (meta) {
+      if (meta.sport && SPORTS.includes(meta.sport)) setSport(meta.sport)
+      if (meta.eventTitle) setTitle(meta.eventTitle)
+      if (meta.eventDate) setEventDate(meta.eventDate.slice(0, 10))
+      if (meta.options?.length) setOptionsText(meta.options.join('\n'))
+    }
+    setActiveTab('events')
+  }
+
   // ── Derived data ──────────────────────────────────────────────────────────
   const uniqueSports = ['All', ...Array.from(new Set(events.map((e) => e.sport))).sort()]
   const filteredEvents = sportFilter === 'All' ? events : events.filter((e) => e.sport === sportFilter)
   const eventsNeedingResults = events.filter((e) => e.status !== 'completed' && !resultSuccess[e.id])
   const selectableEvents = events.filter((e) => e.status !== 'completed')
 
-  const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
+  const unreadRequestCount = requests.filter((r) => !r.read).length
+
+  const tabs: { id: Tab; label: string; icon: React.ElementType; badge?: number }[] = [
     { id: 'members', label: 'Members', icon: Users },
     { id: 'events', label: 'Events', icon: Calendar },
     { id: 'competitions', label: 'Competitions', icon: Layers },
     { id: 'results', label: 'Results', icon: Trophy },
+    { id: 'requests', label: 'Requests', icon: Bell, badge: unreadRequestCount },
   ]
 
   // Shared input class
@@ -338,16 +403,21 @@ export default function AdminPage() {
 
       {/* Tabs */}
       <div className="flex flex-wrap gap-1 mb-8 p-1 glass-card rounded-xl w-fit">
-        {tabs.map(({ id, label, icon: Icon }) => (
+        {tabs.map(({ id, label, icon: Icon, badge }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors relative ${
               activeTab === id ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <Icon className="w-4 h-4" />
             {label}
+            {badge != null && badge > 0 && (
+              <span className="ml-0.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                {badge > 9 ? '9+' : badge}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -838,6 +908,102 @@ export default function AdminPage() {
                   )}
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+      {/* ── REQUESTS TAB ────────────────────────────────────────────────── */}
+      {activeTab === 'requests' && (
+        <div className="glass-card rounded-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+            <div>
+              <h2 className="font-bold text-lg">Platform Event Requests</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">Suggestions from private competition members to add new events to the platform</p>
+            </div>
+            <button onClick={fetchRequests} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
+
+          {requestsLoading ? (
+            <div className="flex items-center justify-center py-16 text-muted-foreground">
+              <RefreshCw className="w-5 h-5 animate-spin mr-2" /> Loading...
+            </div>
+          ) : requests.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-2">
+              <Bell className="w-10 h-10 opacity-30" />
+              <p className="font-semibold">No pending event requests</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {requests.map((req) => {
+                const meta = req.data?.requestMeta
+                return (
+                  <div key={req.id} className={`px-6 py-5 ${!req.read ? 'bg-primary/5' : ''}`}>
+                    <div className="flex flex-col md:flex-row md:items-start gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          {!req.read && (
+                            <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                          )}
+                          <span className="font-semibold text-sm">{req.title}</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-3">{req.message}</p>
+                        {meta && (
+                          <div className="glass-card rounded-xl p-4 space-y-2 text-sm">
+                            {meta.sport && (
+                              <div className="flex gap-3">
+                                <span className="text-muted-foreground w-20 shrink-0">Sport</span>
+                                <span className="font-semibold">{meta.sport}</span>
+                              </div>
+                            )}
+                            {meta.eventTitle && (
+                              <div className="flex gap-3">
+                                <span className="text-muted-foreground w-20 shrink-0">Event</span>
+                                <span className="font-semibold">{meta.eventTitle}</span>
+                              </div>
+                            )}
+                            {meta.eventDate && (
+                              <div className="flex gap-3">
+                                <span className="text-muted-foreground w-20 shrink-0">Date</span>
+                                <span className="font-semibold">
+                                  {new Date(meta.eventDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                </span>
+                              </div>
+                            )}
+                            {meta.options && meta.options.length > 0 && (
+                              <div className="flex gap-3">
+                                <span className="text-muted-foreground w-20 shrink-0">Options</span>
+                                <span className="font-semibold">{meta.options.join(', ')}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className="text-xs text-muted-foreground mt-2">
+                          {new Date(req.createdAt).toLocaleString('en-AU', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                      <div className="flex md:flex-col gap-2 shrink-0">
+                        <button
+                          onClick={() => handleCreateFromRequest(req)}
+                          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:bg-primary/90 transition-colors"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          Create Event
+                        </button>
+                        <button
+                          onClick={() => handleDismissRequest(req.id)}
+                          disabled={dismissingRequest === req.id}
+                          className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg font-semibold text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+                        >
+                          {dismissingRequest === req.id ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>

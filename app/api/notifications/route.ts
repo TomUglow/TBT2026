@@ -19,11 +19,13 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const unreadOnly = searchParams.get('unread') === 'true'
+    const typeFilter = searchParams.get('type')
 
     const notifications = await prisma.notification.findMany({
       where: {
         userId,
         ...(unreadOnly && { read: false }),
+        ...(typeFilter && { type: typeFilter }),
       },
       select: {
         id: true,

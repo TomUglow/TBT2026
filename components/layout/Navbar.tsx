@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -20,6 +20,23 @@ export default function Navbar() {
   const { theme, toggleTheme } = useTheme()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
+  const [adminRequestCount, setAdminRequestCount] = useState(0)
+
+  useEffect(() => {
+    if (!session?.user?.isAdmin) return
+    const fetchAdminRequests = async () => {
+      try {
+        const res = await fetch('/api/notifications?unread=true&type=platform_event_request')
+        if (res.ok) {
+          const data = await res.json()
+          setAdminRequestCount(Array.isArray(data.data) ? data.data.length : 0)
+        }
+      } catch { /* silent */ }
+    }
+    fetchAdminRequests()
+    const interval = setInterval(fetchAdminRequests, 60_000)
+    return () => clearInterval(interval)
+  }, [session?.user?.isAdmin])
 
   const handleLogout = async () => {
     await signOut({ redirect: true, callbackUrl: '/login' })
@@ -64,7 +81,7 @@ export default function Navbar() {
                 {session.user?.isAdmin && (
                   <Link
                     href="/admin"
-                    className={`text-sm font-semibold transition-colors flex items-center gap-2 px-3 py-1.5 rounded-lg ${
+                    className={`text-sm font-semibold transition-colors flex items-center gap-2 px-3 py-1.5 rounded-lg relative ${
                       pathname.startsWith('/admin')
                         ? 'text-primary bg-primary/10'
                         : 'text-muted-foreground hover:text-foreground'
@@ -72,6 +89,11 @@ export default function Navbar() {
                   >
                     <ShieldCheck className="w-4 h-4" />
                     Admin
+                    {adminRequestCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                        {adminRequestCount > 9 ? '9+' : adminRequestCount}
+                      </span>
+                    )}
                   </Link>
                 )}
               </div>
@@ -157,6 +179,11 @@ export default function Navbar() {
                 >
                   <ShieldCheck className="w-4 h-4" />
                   Admin
+                  {adminRequestCount > 0 && (
+                    <span className="ml-auto w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                      {adminRequestCount > 9 ? '9+' : adminRequestCount}
+                    </span>
+                  )}
                 </Link>
               )}
             </div>
