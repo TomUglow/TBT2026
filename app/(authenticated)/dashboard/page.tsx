@@ -461,7 +461,7 @@ export default function Dashboard() {
         <MainEventCard competitions={competitions} />
 
         {/* Empty State */}
-        {competitions.length === 0 && upcomingGames.length < 6 && recentResults.length < 6 && (
+        {!loading && competitions.length === 0 && upcomingGames.length < 6 && recentResults.length < 6 && (
           <div className="text-center py-16">
             <Trophy className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
             <h2 className="text-xl font-bold mb-2 font-display">No Events Yet</h2>
