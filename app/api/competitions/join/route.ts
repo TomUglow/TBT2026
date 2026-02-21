@@ -31,6 +31,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Competition is no longer accepting entries' }, { status: 400 })
     }
 
+    // Private competitions require invite code — use /api/competitions/join-by-code instead
+    if (!competition.isPublic) {
+      return NextResponse.json(
+        { error: 'Private competitions require an invite code. Please use the invite link or code to join.' },
+        { status: 403 }
+      )
+    }
+
     // Create membership (upsert to handle duplicates gracefully)
     await prisma.competitionUser.upsert({
       where: {
