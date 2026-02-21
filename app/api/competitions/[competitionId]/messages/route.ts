@@ -112,7 +112,7 @@ export async function POST(
             type: 'platform_event_request',
             title: 'New Event Suggestion',
             message: `${senderName} suggested a new event: ${eventTitle}${sport ? ` (${sport})` : ''}`,
-            data: { competitionId, messageId: message.id, ...meta },
+            data: { competitionId, messageId: message.id, requestMeta: meta },
           })),
         })
       }
