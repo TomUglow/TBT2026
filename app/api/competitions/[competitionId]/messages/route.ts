@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { messageCreateSchema } from '@/lib/validations'
 import { apiError, apiSuccess, requireAuth } from '@/lib/api-helpers'
 
@@ -112,7 +113,7 @@ export async function POST(
             type: 'platform_event_request',
             title: 'New Event Suggestion',
             message: `${senderName} suggested a new event: ${eventTitle}${sport ? ` (${sport})` : ''}`,
-            data: { competitionId, messageId: message.id, requestMeta: meta },
+            data: { competitionId, messageId: message.id, requestMeta: meta as unknown as Prisma.InputJsonValue },
           })),
         })
       }
