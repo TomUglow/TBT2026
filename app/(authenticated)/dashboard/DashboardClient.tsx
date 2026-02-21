@@ -410,7 +410,7 @@ export default function DashboardClient({
         {/* Upcoming / Live Matches */}
         {upcomingGames.length >= 6 && (
           <section>
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 gold-accent" />
               <h2 className="text-lg font-bold uppercase tracking-wider font-display">Upcoming / Live Matches</h2>
             </div>
@@ -421,7 +421,7 @@ export default function DashboardClient({
         {/* Results */}
         {recentResults.length >= 6 && (
           <section>
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5" style={{ color: '#4CAF50' }} />
               <h2 className="text-lg font-bold uppercase tracking-wider font-display">Results</h2>
             </div>
