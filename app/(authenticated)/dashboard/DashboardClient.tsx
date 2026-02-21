@@ -348,7 +348,7 @@ export default function DashboardClient({
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-8">
             <div>
               <h1 className="text-4xl font-black tracking-tight mb-2 text-charcoal font-display">
-                G&apos;day, <span className="text-primary">{userName?.split(' ')[0] || 'Tipster'}</span>
+                Hello <span className="text-primary">{userName?.split(' ')[0] || 'Tipster'}</span>
               </h1>
               <p className="text-foreground text-lg">Here&apos;s what&apos;s happening.</p>
             </div>

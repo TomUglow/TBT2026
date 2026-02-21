@@ -18,11 +18,11 @@ export default function LandingPage() {
               <div>
                 <span
                   className="text-[11px] uppercase tracking-wider font-black px-3 py-1 rounded-full inline-block mb-4"
-                  style={{ backgroundColor: '#FFD700', opacity: 0.2, color: '#000' }}
+                  style={{ backgroundColor: '#F5F5F5', opacity: 0.8, color: '#000' }}
                 >
                   Free To Play
                 </span>
-                <h1 className="text-4xl lg:text-5xl font-black tracking-tight font-display leading-tight mb-4">
+                <h1 className="text-4xl lg:text-5xl text-white font-black tracking-tight font-display leading-tight mb-4">
                   Prove You're The Ultimate
                 </h1>
                 <h1 className="gold-accent text-4xl lg:text-5xl font-black tracking-tight font-display leading-tight mb-4">
@@ -37,14 +37,14 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link
                   href="/register"
-                  className="bg-primary-foreground text-primary text-center text-sm font-bold px-6 py-3 rounded-lg hover-elevate transition-all"
+                  className=" bg-primary-foreground text-primary text-center text-sm font-bold px-6 py-3 rounded-lg hover-elevate transition-all"
                 >
                   Start Tipping
-                  <ArrowRight className="w-4 h-4 ml-2 inline-block" />
+                  <ArrowRight className="w-3 h-4 ml-2 inline-block" />
                 </Link>
                 <Link
                   href="/login"
-                  className="bg-white/10 text-center text-sm font-bold px-6 py-3 rounded-lg hover-elevate transition-all border border-white/10"
+                  className="bg-white text-center text-sm text-muted font-bold px-6 py-3 rounded-lg hover-elevate transition-all border border-white/50"
                 >
                   Login
                 </Link>
